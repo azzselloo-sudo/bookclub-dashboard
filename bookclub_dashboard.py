@@ -220,17 +220,7 @@ def load_all_data():
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': f'Bearer {SUPABASE_ANON_KEY}',
     }
-    try:
-        r_comments = requests.get(
-            f'{SUPABASE_URL}/rest/v1/review_comments?select=created_at&limit=10000',
-            headers=sb_headers, timeout=10
-        )
-        if r_comments.ok:
-            for row in r_comments.json():
-                dt = row['created_at'][:10].replace('-', '')
-                csub_by_date[dt] += 1
-    except Exception:
-        pass
+    # feedbacks = 상단 의견 남기기 폼 → 사용자 기준 "댓글"
     try:
         r_feedbacks = requests.get(
             f'{SUPABASE_URL}/rest/v1/feedbacks?select=created_at&limit=10000',
@@ -238,6 +228,18 @@ def load_all_data():
         )
         if r_feedbacks.ok:
             for row in r_feedbacks.json():
+                dt = row['created_at'][:10].replace('-', '')
+                csub_by_date[dt] += 1
+    except Exception:
+        pass
+    # review_comments = 리뷰 카드에 다는 댓글 → 사용자 기준 "대댓글"
+    try:
+        r_comments = requests.get(
+            f'{SUPABASE_URL}/rest/v1/review_comments?select=created_at&limit=10000',
+            headers=sb_headers, timeout=10
+        )
+        if r_comments.ok:
+            for row in r_comments.json():
                 dt = row['created_at'][:10].replace('-', '')
                 reply_by_date[dt] += 1
     except Exception:
@@ -377,7 +379,7 @@ if page == "📊 전체 개요":
         (c4, total_pv,    "페이지뷰", "#FFC000"),
         (c5, f"{avg_dur/60:.1f}분", f"평균 체류시간 ({avg_dur:.0f}초)", "#7030A0"),
         (c6, total_like,  "좋아요 ❤️", "#C00000"),
-        (c7, total_comment, "댓글 제출 💬", "#375623"),
+        (c7, total_comment, "댓글+대댓글 💬", "#375623"),
     ]:
         col.markdown(f"""
         <div class="metric-card" style="border-left-color:{color}">
@@ -816,7 +818,7 @@ elif page == "❤️ 좋아요 & 댓글":
         (c1, total_like,            "좋아요 클릭",    "#C00000"),
         (c2, total_ctog,            "댓글창 열기",    "#375623"),
         (c3, total_csub,            "댓글 제출",      "#375623"),
-        (c4, total_reply,           "대댓글/의견 제출","#2E75B6"),
+        (c4, total_reply,           "대댓글 제출",    "#2E75B6"),
         (c5, f"{(total_csub+total_reply)/total_ctog*100:.0f}%" if total_ctog else "0%", "댓글 전환율", "#7030A0"),
     ]:
         col.markdown(f"""
@@ -832,7 +834,7 @@ elif page == "❤️ 좋아요 & 댓글":
         ('like_by_date',    '좋아요',       '#C00000', 3),
         ('comment_by_date', '댓글열기',     '#70AD47', 2),
         ('csub_by_date',    '댓글제출',     '#375623', 2),
-        ('reply_by_date',   '대댓글/의견',  '#2E75B6', 2),
+        ('reply_by_date',   '대댓글',       '#2E75B6', 2),
         ('series_by_date',  '시리즈클릭',  '#9B59B6', 2),
     ]:
         ys = [data[key].get(d, 0) for d in filtered_dates]
@@ -860,7 +862,7 @@ elif page == "❤️ 좋아요 & 댓글":
         cc = data['chap_click_by_date'].get(dt, 0)
         if any([lk, ct, cs, rp, sr, cc]):
             rows.append({'날짜': dt[4:6]+'/'+dt[6:], '좋아요': lk or '',
-                         '댓글열기': ct or '', '댓글제출': cs or '', '대댓글/의견': rp or '',
+                         '댓글열기': ct or '', '댓글제출': cs or '', '대댓글': rp or '',
                          '시리즈클릭': sr or '', '챕터클릭': cc or ''})
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
