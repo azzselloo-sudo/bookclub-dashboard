@@ -10,6 +10,7 @@ from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dime
 from google.oauth2 import service_account
 import googleapiclient.discovery
 import time
+import requests
 
 # ── 설정 ──────────────────────────────────────────────
 st.set_page_config(
@@ -22,6 +23,9 @@ st.set_page_config(
 PROPERTY_ID = '523292335'
 KEY_FILE    = 'C:/Users/ozcre/Downloads/loorou-bookclub-104e72493276.json'
 SHEET_ID    = '1isk4R8YiWjH2AXKzPN8QjctU5XAVMicIkJzQznYE4JE'
+
+SUPABASE_URL      = 'https://hegohmcxglujatsnlmtj.supabase.co'
+SUPABASE_ANON_KEY = 'sb_publishable_feAjcEINhj0VQVFhgGNQYQ_Vn8nIBxP'
 
 SCOPES = [
     'https://www.googleapis.com/auth/analytics.readonly',
@@ -208,10 +212,36 @@ def load_all_data():
         elif evt == 'comment_toggle':
             comment_by_date[dt] += cnt
             if ch and ch != '(not set)': comment_by_chap[f'{s_name} · {ch}챕터'] += cnt
-        elif evt == 'comment_submit':   csub_by_date[dt] += cnt
-        elif evt == 'feedback_submit':  reply_by_date[dt] += cnt
         elif evt == 'series_click':     series_by_date[dt] += cnt
         elif evt == 'chapter_click':    chap_click_by_date[dt] += cnt
+
+    # ── Supabase에서 댓글/의견 직접 집계 (GA4보다 정확) ──────────
+    sb_headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': f'Bearer {SUPABASE_ANON_KEY}',
+    }
+    try:
+        r_comments = requests.get(
+            f'{SUPABASE_URL}/rest/v1/review_comments?select=created_at&limit=10000',
+            headers=sb_headers, timeout=10
+        )
+        if r_comments.ok:
+            for row in r_comments.json():
+                dt = row['created_at'][:10].replace('-', '')
+                csub_by_date[dt] += 1
+    except Exception:
+        pass
+    try:
+        r_feedbacks = requests.get(
+            f'{SUPABASE_URL}/rest/v1/feedbacks?select=created_at&limit=10000',
+            headers=sb_headers, timeout=10
+        )
+        if r_feedbacks.ok:
+            for row in r_feedbacks.json():
+                dt = row['created_at'][:10].replace('-', '')
+                reply_by_date[dt] += 1
+    except Exception:
+        pass
 
     # 신규 vs 재방문
     r5 = run(['date', 'newVsReturning'], ['sessions', 'averageSessionDuration'])
