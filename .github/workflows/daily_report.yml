@@ -1,0 +1,26 @@
+name: 북클럽 일일 리포트
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 매일 KST 09:00 (= UTC 00:00)
+  workflow_dispatch:        # 수동 실행 버튼
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 리포트 발송
+        env:
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        run: python send_report.py
