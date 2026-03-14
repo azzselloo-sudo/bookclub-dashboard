@@ -11,6 +11,8 @@ from google.oauth2 import service_account
 import googleapiclient.discovery
 import time
 import requests
+import json
+import re
 
 # ── 설정 ──────────────────────────────────────────────
 st.set_page_config(
@@ -242,6 +244,32 @@ def load_all_data():
             for row in r_comments.json():
                 dt = row['created_at'][:10].replace('-', '')
                 reply_by_date[dt] += 1
+    except Exception:
+        pass
+
+    # 구글 시트 리뷰(의견) 날짜별 집계 → 댓글(csub_by_date)에 합산
+    try:
+        SHEET_REVIEW_GID = '438092292'
+        gviz_url = (
+            f'https://docs.google.com/spreadsheets/d/{SHEET_ID}'
+            f'/gviz/tq?gid={SHEET_REVIEW_GID}&tqx=out:json'
+        )
+        r_sheet = requests.get(gviz_url, timeout=12)
+        if r_sheet.ok:
+            m = re.search(r'google\.visualization\.Query\.setResponse\((.*)\);',
+                          r_sheet.text, re.DOTALL)
+            if m:
+                sheet_data = json.loads(m.group(1))
+                for row in sheet_data.get('table', {}).get('rows', []):
+                    cells = row.get('c', [])
+                    if not cells or not cells[0]:
+                        continue
+                    ts_raw = (cells[0] or {}).get('v', '')
+                    if isinstance(ts_raw, str):
+                        mm = re.match(r'Date\((\d+),(\d+),(\d+)', ts_raw)
+                        if mm:
+                            y, mo, d = int(mm.group(1)), int(mm.group(2)) + 1, int(mm.group(3))
+                            csub_by_date[f'{y}{mo:02d}{d:02d}'] += 1
     except Exception:
         pass
 
