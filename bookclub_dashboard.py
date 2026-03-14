@@ -190,6 +190,7 @@ def load_all_data():
     like_by_date = defaultdict(int)
     comment_by_date = defaultdict(int)
     csub_by_date = defaultdict(int)
+    reply_by_date = defaultdict(int)   # feedback_submit (대댓글/의견)
     series_by_date = defaultdict(int)
     chap_click_by_date = defaultdict(int)
     like_by_chap = defaultdict(int)
@@ -208,6 +209,7 @@ def load_all_data():
             comment_by_date[dt] += cnt
             if ch and ch != '(not set)': comment_by_chap[f'{s_name} · {ch}챕터'] += cnt
         elif evt == 'comment_submit':   csub_by_date[dt] += cnt
+        elif evt == 'feedback_submit':  reply_by_date[dt] += cnt
         elif evt == 'series_click':     series_by_date[dt] += cnt
         elif evt == 'chapter_click':    chap_click_by_date[dt] += cnt
 
@@ -236,6 +238,7 @@ def load_all_data():
         'like_by_date': dict(like_by_date),
         'comment_by_date': dict(comment_by_date),
         'csub_by_date': dict(csub_by_date),
+        'reply_by_date': dict(reply_by_date),
         'series_by_date': dict(series_by_date),
         'chap_click_by_date': dict(chap_click_by_date),
         'like_by_chap': dict(like_by_chap),
@@ -332,7 +335,7 @@ if page == "📊 전체 개요":
                 for d in filtered_dates)
     avg_dur = w_dur / total_sess if total_sess else 0
     total_like = sum(data['like_by_date'].get(d, 0) for d in filtered_dates)
-    total_comment = sum(data['csub_by_date'].get(d, 0) for d in filtered_dates)
+    total_comment = sum(data['csub_by_date'].get(d, 0) + data['reply_by_date'].get(d, 0) for d in filtered_dates)
 
     total_subs = sum(len(v) for v in subs.values())
 
@@ -775,14 +778,16 @@ elif page == "❤️ 좋아요 & 댓글":
     total_like = sum(data['like_by_date'].values())
     total_ctog = sum(data['comment_by_date'].values())
     total_csub = sum(data['csub_by_date'].values())
+    total_reply = sum(data['reply_by_date'].values())
     total_series = sum(data['series_by_date'].values())
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     for col, val, lbl, clr in [
-        (c1, total_like,   "좋아요 클릭", "#C00000"),
-        (c2, total_ctog,   "댓글창 열기", "#375623"),
-        (c3, total_csub,   "댓글 제출",   "#375623"),
-        (c4, f"{total_csub/total_ctog*100:.0f}%" if total_ctog else "0%", "댓글 전환율", "#7030A0"),
+        (c1, total_like,            "좋아요 클릭",    "#C00000"),
+        (c2, total_ctog,            "댓글창 열기",    "#375623"),
+        (c3, total_csub,            "댓글 제출",      "#375623"),
+        (c4, total_reply,           "대댓글/의견 제출","#2E75B6"),
+        (c5, f"{(total_csub+total_reply)/total_ctog*100:.0f}%" if total_ctog else "0%", "댓글 전환율", "#7030A0"),
     ]:
         col.markdown(f"""
         <div class="metric-card" style="border-left-color:{clr}">
@@ -794,10 +799,11 @@ elif page == "❤️ 좋아요 & 댓글":
     xs = [dt[4:6]+'/'+dt[6:] for dt in filtered_dates]
     fig_eng = go.Figure()
     for key, name, color, width in [
-        ('like_by_date',    '좋아요',    '#C00000', 3),
-        ('comment_by_date', '댓글열기',  '#70AD47', 2),
-        ('csub_by_date',    '댓글제출',  '#375623', 2),
-        ('series_by_date',  '시리즈클릭','#2E75B6', 2),
+        ('like_by_date',    '좋아요',       '#C00000', 3),
+        ('comment_by_date', '댓글열기',     '#70AD47', 2),
+        ('csub_by_date',    '댓글제출',     '#375623', 2),
+        ('reply_by_date',   '대댓글/의견',  '#2E75B6', 2),
+        ('series_by_date',  '시리즈클릭',  '#9B59B6', 2),
     ]:
         ys = [data[key].get(d, 0) for d in filtered_dates]
         fig_eng.add_trace(go.Scatter(
@@ -819,11 +825,12 @@ elif page == "❤️ 좋아요 & 댓글":
         lk = data['like_by_date'].get(dt, 0)
         ct = data['comment_by_date'].get(dt, 0)
         cs = data['csub_by_date'].get(dt, 0)
+        rp = data['reply_by_date'].get(dt, 0)
         sr = data['series_by_date'].get(dt, 0)
         cc = data['chap_click_by_date'].get(dt, 0)
-        if any([lk, ct, cs, sr, cc]):
+        if any([lk, ct, cs, rp, sr, cc]):
             rows.append({'날짜': dt[4:6]+'/'+dt[6:], '좋아요': lk or '',
-                         '댓글열기': ct or '', '댓글제출': cs or '',
+                         '댓글열기': ct or '', '댓글제출': cs or '', '대댓글/의견': rp or '',
                          '시리즈클릭': sr or '', '챕터클릭': cc or ''})
     if rows:
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
