@@ -41,6 +41,13 @@ TODAY = date.today().strftime('%Y년 %m월 %d일')
 START = '2026-01-27'
 START8 = '20260127'
 
+# 한글 폰트 설정
+import plotly.io as pio
+pio.templates["bookclub"] = go.layout.Template(
+    layout=go.Layout(font=dict(family="Noto Sans CJK KR, Malgun Gothic, sans-serif"))
+)
+pio.templates.default = "bookclub"
+
 # ── 인증 (GitHub Actions: 환경변수 / 로컬: JSON 파일) ──
 _gcp_env = os.environ.get('GCP_SERVICE_ACCOUNT', '')
 if _gcp_env:
