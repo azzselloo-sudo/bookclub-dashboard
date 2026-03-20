@@ -439,7 +439,7 @@ if page == "📊 전체 개요":
     # 북클럽 구간 배경 표시
     periods = [('2026-01-27', '2026-02-13', '타프티', 'rgba(46,117,182,0.07)'),
                ('2026-02-14', '2026-03-06', '매력자본', 'rgba(112,173,71,0.07)'),
-               ('2026-03-07', '2026-03-13', '유혹의기술', 'rgba(255,192,0,0.12)')]
+               ('2026-03-07', end_date.strftime('%Y-%m-%d'), '유혹의기술', 'rgba(255,192,0,0.12)')]
     for ps, pe, pn, pc in periods:
         fig.add_vrect(x0=ps[5:].replace('-','/'), x1=pe[5:].replace('-','/'),
                       fillcolor=pc, line_width=0,
@@ -481,7 +481,7 @@ elif page == "👥 구독자 추이":
     st.title("👥 구독자 추이")
 
     ABS_START = date(2026, 1, 27)
-    ABS_END   = date(2026, 3, 13)
+    ABS_END   = end_date
     n_days    = (ABS_END - ABS_START).days + 1
     xs_abs    = [(ABS_START + timedelta(days=i)).strftime('%m/%d') for i in range(n_days)]
 
@@ -512,7 +512,7 @@ elif page == "👥 구독자 추이":
     tab1, tab2 = st.tabs(["📅 실제 날짜 기준", "📈 D+N 상대일 기준"])
 
     with tab1:
-        st.markdown('<div class="section-title">전체 날짜 기준 누적 구독자 (1/27 ~ 3/13)</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-title">전체 날짜 기준 누적 구독자 (1/27 ~ {ABS_END.month}/{ABS_END.day})</div>', unsafe_allow_html=True)
 
         fig_abs = go.Figure()
 
